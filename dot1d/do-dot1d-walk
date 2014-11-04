@@ -1,0 +1,70 @@
+#!/bin/bash
+# http://www.cisco.com/warp/public/477/SNMP/cam_snmp.html
+
+ip=${1:?}
+
+unused="
+dot1dTpFdbAddress
+"
+
+l="
+dot1dTpFdbPort
+dot1dBasePortIfIndex
+ifName
+ipNetToMediaPhysAddress
+
+ifDescr
+
+ipAdEntAddr
+sysDescr
+sysObjectID
+"
+
+# <community>@<vlanid> seems to work for catalyst only
+community=public@1
+
+community=public
+cmd=snmpbulkwalk
+version=2c
+
+ignore() {
+if [ $ip == 10.100.100.50 ]
+then
+	community=s4719jmonitor
+	cmd=snmpwalk
+	version=1
+fi
+}
+
+if [ $ip == 10.100.100.49 ]
+then
+	community=public
+	cmd=snmpwalk
+	version=1
+fi
+
+if [ $ip == 172.16.3.42 ]
+then
+	community=c1tt1oLAB
+	cmd=snmpbulkwalk
+	version=2c
+fi
+
+for i in $l
+do
+	echo i=$i
+
+	O=n
+	if [ $i == sysObjectID ]
+	then O=f
+	fi
+
+	o="-O$O -v$version -c$community"
+	o="-Cc $o" #foundry and netgear report OIDs outoforder
+	o="$o -Oq"
+
+	snmpwalk $o $ip $i > $i.txt
+
+	#sleep 1
+	usleep 400000
+done

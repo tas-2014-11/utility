@@ -1,0 +1,11 @@
+#!/bin/bash
+
+. include
+
+for ip in 172.16.*
+do
+	echo ip=$ip
+	cd $ip
+	../do-dot1d-interpret $ip > 0.txt
+	cd ..
+done

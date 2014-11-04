@@ -1,0 +1,198 @@
+#!/usr/bin/perl
+
+use strict;
+
+sub dump_hash {
+	my $h = shift;
+	my $sep = "";
+	print "h=$h\n";
+	foreach my $key (sort(keys %$h)) {
+		print "$sep";
+		print "$key=$h->{$key}";
+		$sep = "|";
+	}
+	print "\n";
+}
+
+my %d = (
+	ipAdEntAddr => "deleted",
+	sysDescr => "deleted",
+	ifindex => "deleted",
+	ifname => "deleted",
+	ifdescr => "deleted",
+	fdbport => "deleted",
+	mac => "deleted",
+	iplist => "deleted"
+);
+
+sub parse_one {
+	my @fieldnames = qw/ipAdEntAddr sysDescr ifindex ifname ifdescr fdbport mac iplist/;
+	my @a = split(/\|/);
+
+	my $h = {};
+	my $i = 0;
+	foreach my $fieldname (@fieldnames) {
+		$h->{$fieldname} = $a[$i++];
+	}
+	#dump_hash $h;
+	$h;
+}
+
+my $h = {};
+my $meta = {};
+
+my $macs = {};
+
+sub parse_all {
+	while(<>) {
+		chomp;
+		my $hh = parse_one $_;
+
+		my $ip = $hh->{ipAdEntAddr};
+		my $ifindex = $hh->{ifindex};
+		my $mac = $hh->{mac};
+
+		$h->{$ip}->{$ifindex}->{$mac} = $hh;
+
+		$meta->{$ip}->{sysDescr} = $hh->{sysDescr};
+		$meta->{$ip}->{$ifindex}->{ifname} = $hh->{ifname};
+		$meta->{$ip}->{$ifindex}->{ifdescr} = $hh->{ifdescr};
+		$meta->{$ip}->{$ifindex}->{fdbport} = $hh->{fdbport};
+		++$meta->{$ip}->{$ifindex}->{siblings};
+
+		$macs->{$mac} = 1;
+	}
+}
+
+sub print_meta {
+	my $h = shift;
+	my $ifname = $h->{ifname};
+	my $ifdescr = $h->{ifdescr};
+
+	if(length($ifname)) {
+		print "  ifname=$ifname\n";
+		return;
+	}
+
+	if(length($ifdescr)) {
+		print "  ifdescr=$ifdescr\n";
+		return;
+	}
+
+	print "  MISSING_INTERFACE_NAME_AND_DESCRIPTION\n";
+}
+
+sub pretty_print {
+	foreach my $ip (sort(keys %$h)) {
+		print "ip=$ip";
+		#print "\n";
+		print "  ";
+		print "sysDescr=$meta->{$ip}->{sysDescr}\n";
+
+		foreach my $ifindex (sort {$a <=> $b} (keys %{$h->{$ip}})) {
+			print "  ifindex=$ifindex";
+			#print "\n";
+
+			print_meta $meta->{$ip}->{$ifindex};
+
+			my $siblings = $meta->{$ip}->{$ifindex}->{siblings};
+
+			foreach my $mac (sort (keys %{$h->{$ip}->{$ifindex}})) {
+				print "    $mac";
+
+				my $hh = $h->{$ip}->{$ifindex}->{$mac};
+
+				print " siblings=$siblings";
+
+				print " $hh->{iplist}";
+				print "\n";
+			}
+		}
+
+		print "\n";
+	}
+}
+
+sub count_how_many_times_this_mac_appears_with_no_siblings {
+	my $mac = shift;
+
+	my $n = 0;
+	foreach my $ip (sort(keys %$h)) {
+		foreach my $ifindex (sort {$a <=> $b} (keys %{$h->{$ip}})) {
+			#the desired mac is not at this ifindex.  move on.
+			next unless($h->{$ip}->{$ifindex}->{$mac});
+
+			my $siblings = $meta->{$ip}->{$ifindex}->{siblings};
+
+			#there are multiple macs at this ifindex.  not interested.
+			next if($siblings != 1);
+
+			++$n;
+		}
+	}
+	$n;
+}
+
+sub purge_appearances_of_this_mac_with_multiple_siblings {
+	my $mac = shift;
+
+	my $purges = 0;
+	foreach my $ip (sort(keys %$h)) {
+		foreach my $ifindex (sort {$a <=> $b} (keys %{$h->{$ip}})) {
+			#the desired mac is not at this ifindex.  move on.
+			next unless($h->{$ip}->{$ifindex}->{$mac});
+
+			my $siblings = $meta->{$ip}->{$ifindex}->{siblings};
+
+			#don't delete the leaf
+			next if($siblings == 1);
+
+			--$meta->{$ip}->{$ifindex}->{siblings};
+
+			$h->{$ip}->{$ifindex}->{$mac} = \%d;
+			delete($h->{$ip}->{$ifindex}->{$mac});
+
+			++$purges;
+		}
+	}
+
+	$purges;
+}
+
+#this needs to run until it stops making changes
+#need to recalculate sibling count after each pass
+sub cleanup {
+	#foreach my $mac (sort(keys %$macs)) { print "mac=$mac\n"; }
+
+	foreach my $mac (sort(keys %$macs)) {
+		#print "mac=$mac ";
+
+		my $n = count_how_many_times_this_mac_appears_with_no_siblings($mac);
+		#print " in=$n";
+
+		if(1 == $n) {
+			my $purges = purge_appearances_of_this_mac_with_multiple_siblings($mac);
+			#print " purges=$purges";
+		}
+		#print "\n";
+	}
+
+
+}
+
+sub main {
+	#dump_hash \%d;
+
+	parse_all;
+	#dump_hash $h;
+
+	#pretty_print;
+
+	#print "\n\n################\n\n";
+	cleanup;
+	#print "\n\n################\n\n";
+
+	pretty_print;
+}
+
+main;

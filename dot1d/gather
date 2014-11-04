@@ -1,0 +1,24 @@
+#!/bin/bash
+
+. include
+
+#l=172.16.1.21
+
+eval l=$*
+
+echo l=$l
+
+for ip in $l
+do
+	(
+	echo ip=$ip
+
+	mkdir -p $ip
+	cd $ip
+
+	../do-dot1d-walk $ip
+	) &
+
+	#sleep 1
+	usleep 400000
+done

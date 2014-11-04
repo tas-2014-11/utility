@@ -1,0 +1,150 @@
+#!/usr/bin/perl
+
+use strict;
+
+my $doc = qw^
+Full thread dump Java HotSpot(TM) Server VM (1.5.0_11-b03 mixed mode):
+
+"DefaultUDPTransportMapping_10.13.18.51/0" daemon prio=1 tid=0x27f27a88 nid=0x2e88 runnable [0x00000000..0x00000000]
+
+"Timer-669961" daemon prio=1 tid=0x2b6368d0 nid=0x2e84 in Object.wait() [0x306fe000..0x306ff130]
+        at java.lang.Object.wait(Native Method)
+^;
+
+my $td = {};
+my $all_tids = {};
+
+sub slurp_thread_dump {
+	my $fn = "td.txt";
+	open(my $in,"<$fn") || die("open($fn): $!");
+	my $foundit;
+	while(<$in>) {
+		chomp;
+		++$foundit if(/^Full thread dump Java HotSpot/);
+		next unless($foundit);
+
+		if(/^"(.*)".* nid=0x([0-9a-f]+)/) {
+			my $threadname = $1;
+			my $nid0x = $2;
+			my $nid = hex($nid0x);
+
+			#print "nid0x=$nid0x ";
+			#print "nid=$nid ";
+			#print "threadname=$threadname";
+			#print "\n";
+
+			$td->{$nid}->{nid0x} = $nid0x;
+			$td->{$nid}->{threadname} = $threadname;
+			$td->{$nid}->{nid} = $nid;
+
+			$all_tids->{$nid} = 1;
+		}
+	}
+	close($in);
+}
+
+my $monthabbrevs2number = {};
+
+sub init_abbrs {
+	my @abbrevs = qw/Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec/;
+	my $i = 1;
+	foreach(@abbrevs) {
+		$monthabbrevs2number->{$_} = $i++;
+	}
+}
+
+my $doc2 = qw/
+  PID NLWP   LWP  C     TIME                  STARTED COMMAND
+28207  440 28207  0 00:00:03 Tue Mar  3 01:08:21 2009 java
+28207  440 28210  0 00:05:26 Tue Mar  3 01:08:21 2009 java
+/;
+
+my $ps = {};
+
+sub slurp_psLo {
+	my $fn = "Lo.txt";
+	open(my $in,"<$fn") || die("open($fn): $!");
+	while(<$in>) {
+		chomp;
+		next if(/PID NLWP/);
+
+		my ($pid,$nlwp,$lwp,$c,$cputime,$dow,$month,$dom,$hhmmss,$year,$comm) = split;
+		my $h = {};
+
+		$h->{pid} = $pid;
+		$h->{nlwp} = $nlwp;
+		$h->{lwp} = $lwp;
+		$h->{c} = $c;
+		$h->{cputime} = $cputime;
+		$h->{dow} = $dow;
+		$h->{month} = $month;
+		$h->{dom} = $dom;
+		$h->{hhmmss} = $hhmmss;
+		$h->{year} = $year;
+		$h->{comm} = $comm;
+
+		my $m = $monthabbrevs2number->{$month};
+		$h->{iso8601} = sprintf("%04d-%02d-%02dT$hhmmss",$year,$m,$dom);
+
+		$ps->{$lwp} = $h;
+
+		$all_tids->{$nlwp} = 1;
+	}
+	close($in);
+}
+
+sub dump_hash_of_hashes {
+	my $h = shift;
+	my $keys = shift;
+	foreach(sort keys(%$h)) {
+		dump_hash($h->{$_},$keys);
+	}
+}
+
+sub dump_hash {
+	my $h = shift;
+	my $keys = shift;
+	my $separator = "";
+
+	my @keys = sort keys(%$h);
+	$keys = \@keys unless(defined($keys));
+
+	foreach(@$keys) {
+		print "$separator";
+		print "$_=";
+		print "$h->{$_}";
+		$separator = "|";
+	}
+	print "\n";
+}
+
+sub mergeem {
+	foreach my $tid (keys(%$all_tids)) {
+		my $atd = $td->{$tid};
+		my $aps = $ps->{$tid};
+
+		printf("%05d  ",$tid);
+		printf("%2d  ",$aps->{c});
+		printf("%10s  ",$aps->{cputime});
+		printf("%19s  ",$aps->{iso8601});
+		printf("%-s",$atd->{threadname});
+		printf("\n");
+	}
+}
+
+sub main {
+	init_abbrs;
+	#dump_hash($monthabbrevs2number);
+
+	slurp_thread_dump;
+	#dump_hash_of_hashes($td);
+
+	slurp_psLo;
+	#dump_hash_of_hashes($ps);
+
+	#dump_hash($all_tids);
+
+	mergeem;
+}
+
+main;

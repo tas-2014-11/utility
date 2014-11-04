@@ -1,0 +1,21 @@
+#!/bin/bash
+
+out=consolidated-arp.txt
+
+t=/tmp/t
+
+#awk '!/^IP/ {printf("%-14s %s\n",$1,tolower($4));}' < $in
+
+(
+	if [ -f $out ]
+	then cat $out
+	fi
+
+	(
+	cat arp.txt
+	cat /proc/net/arp
+	cat ~/arp/arp-*.txt
+	) | awk '!/^IP/ {print $1,tolower($4);}'
+) | sort -u | grep -v 00:00:00:00:00:00 > $t
+
+cat $t > $out

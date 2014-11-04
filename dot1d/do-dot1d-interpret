@@ -1,0 +1,252 @@
+#!/usr/bin/perl
+
+use strict;
+
+my %mac2fdbport;
+my %fdbport2ifindex;
+my %ifindex2ifname;
+my %ifindex2ifdescr;
+my %ip2mac;
+
+my $ipAdEntAddr;
+my $sysDescr;
+
+sub parse_all {
+	my $fn;
+	my $in;
+
+	#.1.3.6.1.2.1.17.4.3.1.2.0.0.33.201.15.182 24
+	$fn="dot1dTpFdbPort.txt";
+	open($in,"<$fn") || die;
+	while(<$in>) {
+		chomp; last if(/No Such Object/);
+
+		my ($oid,$fdbport) = split;
+		my @oid = split(/\./,$oid);
+
+		my $mac = "";
+		my $sep = "";
+		for(my $i=12;$i<=17;$i++) {
+			my $nibble = sprintf("%02x",$oid[$i]);
+			$mac = "$mac$sep$nibble";
+			$sep = ":";
+		}
+		$mac2fdbport{$mac} = $fdbport;
+		#print "$mac $fdbport\n";
+	}
+
+	#.1.3.6.1.2.1.17.1.4.1.2.1 1
+	$fn="dot1dBasePortIfIndex.txt";
+	open($in,"<$fn") || die;
+	while(<$in>) {
+		chomp; last if(/No Such Object/);
+		my ($oid,$ifindex) = split;
+
+		my @oid = split(/\./,$oid);
+		my $fdbport = $oid[12];
+
+		$fdbport2ifindex{$fdbport} = $ifindex;
+	}
+
+	#.1.3.6.1.2.1.31.1.1.1.1.1 1/0/1
+	$fn="ifName.txt";
+	open($in,"<$fn") || die;
+	while(<$in>) {
+		chomp; last if(/No Such Object/);
+
+		my ($oid) = split;
+		my @oid = split(/\./,$oid);
+		my $ifindex = $oid[12];
+
+		my $ifname = substr($_,1+length($oid));
+
+		$ifindex2ifname{$ifindex} = $ifname;
+	}
+
+	#.1.3.6.1.2.1.2.2.1.2.9 Unit: 1 Slot: 0 Port: 9 10/100 Copper - Level
+	$fn="ifDescr.txt";
+	open($in,"<$fn") || die;
+	while(<$in>) {
+		chomp; last if(/No Such Object/);
+
+		my ($oid) = split;
+		my @oid = split(/\./,$oid);
+		my $ifindex = $oid[11];
+
+		my $ifdescr = substr($_,1+length($oid));
+
+		$ifindex2ifdescr{$ifindex} = $ifdescr;
+
+		#print "$ifindex $ifdescr\n";
+	}
+
+	#172.16.0.1 00:13:c4:56:a3:b8
+	$fn="../consolidated-arp.txt";
+	open($in,"<$fn") || die;
+	while(<$in>) {
+		chomp;
+		my @a = split(" ");
+		my $ip = $a[0];
+		my $mac = lc($a[1]);
+		$ip2mac{$ip} = $mac;
+	}
+
+	#.1.3.6.1.2.1.4.22.1.2.424.172.16.1.1 "00 13 C4 56 A3 B8 "
+	$fn="ipNetToMediaPhysAddress.txt";
+	open($in,"<$fn") || die;
+	while(<$in>) {
+		chomp; last if(/No Such Object/);
+
+		my @a = split(/[\s\"]/);
+		my $mac = "";
+		my $sep = "";
+		for(my $i=2;$i<=7;$i++) {
+			my $nibble = lc($a[$i]);
+			$mac = "$mac$sep$nibble";
+			$sep = ":";
+		}
+
+		my $oid = $a[0];
+		my @oid = split(/\./,$oid);
+
+		my $ip = "";
+		my $sep = "";
+		for(my $i=12;$i<=15;$i++) {
+			my $byte = $oid[$i];
+			$ip = "$ip$sep$byte";
+			$sep = ".";
+		}
+
+		$ip2mac{$ip} = $mac;
+		#print "$mac  $ip\n";
+	}
+
+	#this table sure seems useless
+	#.1.3.6.1.2.1.4.20.1.1.172.16.1.21 172.16.1.21
+	$fn="ipAdEntAddr.txt";
+	my $sep = "";
+	open($in,"<$fn") || die;
+	while(<$in>) {
+		chomp; last if(/No Such Object/);
+		my ($oid,$s) = split;
+		$ipAdEntAddr .= $sep;
+		$ipAdEntAddr .= $s;
+		$sep = " ";
+	}
+
+	#.1.3.6.1.2.1.1.1.0 FSM7328S 24+4 L3 Stackable Switch
+	$fn="sysDescr.txt";
+	open($in,"<$fn") || die;
+	while(<$in>) {
+		chomp; last if(/No Such Object/);
+		$sysDescr .= substr($_,1+index($_," "));
+		#print $sysDescr,length($sysDescr),"\n";
+		$sysDescr .= $_ unless(length($sysDescr));
+	}
+}
+
+my %ifindex2maclist;
+my %mac2iplist;
+
+sub pivot_hashes {
+	foreach my $mac (sort(keys %mac2fdbport)) {
+		my $fdbport = $mac2fdbport{$mac};
+		my $ifindex = $fdbport2ifindex{$fdbport};
+
+		#print "$mac $fdbport $ifindex\n";
+
+		$ifindex2maclist{$ifindex} .= "$mac ";
+	}
+
+	foreach my $ip (sort(keys %ip2mac)) {
+		my $mac = $ip2mac{$ip};
+		$mac2iplist{$mac} .= "$ip ";
+	}
+}
+
+sub pretty_print {
+	print "### $ipAdEntAddr\n";
+	print "### $sysDescr\n";
+	print "\n";
+
+	foreach my $ifindex (sort {$a <=> $b} (keys %ifindex2maclist)) {
+		my $ifname = $ifindex2ifname{$ifindex};
+		my $ifdescr = $ifindex2ifdescr{$ifindex};
+		my $maclist = $ifindex2maclist{$ifindex};
+
+		my $fdbport;
+		my @a = split(" ",$maclist);
+		foreach my $mac (@a) { $fdbport = $mac2fdbport{$mac}; last; }
+
+		print "fdbport=$fdbport   ifindex=$ifindex   ifname=$ifname   ifdescr=$ifdescr\n";
+
+		my @a = split(" ",$maclist);
+		foreach my $mac (@a) {
+			my $iplist = $mac2iplist{$mac};
+			print "   $mac   $iplist\n";
+		}
+	}
+}
+
+sub ugly_print {
+	open(my $out,">ugly.txt") || die;
+	foreach my $ifindex (sort {$a <=> $b} (keys %ifindex2maclist)) {
+		my $ifname = $ifindex2ifname{$ifindex};
+		my $ifdescr = $ifindex2ifdescr{$ifindex};
+		my $maclist = $ifindex2maclist{$ifindex};
+
+		my $fdbport;
+
+		my @a = split(" ",$maclist);
+		foreach my $mac (@a) {
+			$fdbport = $mac2fdbport{$mac};
+			my $iplist = $mac2iplist{$mac};
+
+			my $s = "";
+			$s .= "$ipAdEntAddr|$sysDescr|";
+			$s .= "$ifindex|$ifname|$ifdescr|";
+			$s .= "$fdbport|";
+			$s .= "$mac|";
+			$s .= "$iplist";
+
+			print $out "$s\n";;
+		}
+	}
+	close($out);
+}
+
+sub dumpHash {
+	my $href = shift;
+	my $keylabel = shift;
+	my $valuelabel = shift;
+
+	print STDERR "##################################################################\n";
+	print STDERR "### ${keylabel}2${valuelabel}\n";
+	print STDERR "\n";
+
+	foreach my $key (sort(keys %$href)) {
+		my $value = $href->{$key};
+		print STDERR "$keylabel=$key $valuelabel=$value\n";
+	}
+	print STDERR "\n";
+}
+
+sub main {
+	parse_all;
+
+	#dumpHash(\%mac2fdbport,"mac","fdbport");
+	#dumpHash(\%fdbport2ifindex,"fdbport","ifindex");
+	#dumpHash(\%ifindex2ifname,"ifindex","ifname");
+	#dumpHash(\%ifindex2ifdescr,"ifindex","ifdescr");
+	#dumpHash(\%ip2mac,"ip","mac");
+
+	pivot_hashes;
+
+	#dumpHash(\%ifindex2maclist,"ifindex","maclist");
+	#dumpHash(\%mac2iplist,"mac","maciplist");
+
+	pretty_print;
+	ugly_print;
+}
+
+main;

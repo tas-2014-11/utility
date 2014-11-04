@@ -1,0 +1,39 @@
+#!/bin/bash
+
+
+go() {
+	net=$1
+	min=$2
+	max=$3
+
+	let i=$min
+	while [ $i -le $max ]
+	do
+		ip=$net.$i
+		echo ip=$ip
+		#echo | nc -w2 $ip 65534 &
+		ping -c3 $ip &
+		let i=i+1
+	done
+	sleep 2
+}
+
+#go 10.1.10 0 255
+#go 10.100.100 0 255
+#exit
+#go 71.141.77  32 47
+
+#go 172.16.0 1 255
+#go 172.16.1 1 255
+#go 172.16.2 1 255
+#go 172.16.3 1 255
+#go 172.16.4 1 255
+
+for i in $*
+do
+	go 172.16.$i 1 255
+done
+
+sleep 1
+
+cat /proc/net/arp >> arp.txt

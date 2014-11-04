@@ -1,0 +1,51 @@
+### 172.16.1.16
+### Foundry Networks, Inc. FastIron Workgroup Switch, Iron Software Version 07.1.23T10 Compiled on Apr 18 2001 at 13:02:26 labeled as FWS07123
+
+fdbport=1   ifindex=1   ifname=   ifdescr=FastEthernet1
+   00:50:8b:e0:43:b1   172.16.1.34 
+fdbport=2   ifindex=2   ifname=   ifdescr=FastEthernet2
+   00:02:a5:8a:46:66   172.16.1.36 
+fdbport=3   ifindex=3   ifname=   ifdescr=FastEthernet3
+   00:50:8b:e1:fc:0e   172.16.1.35 
+fdbport=4   ifindex=4   ifname=   ifdescr=FastEthernet4
+   00:0d:56:fe:a9:9c   172.16.1.45 
+fdbport=5   ifindex=5   ifname=   ifdescr=FastEthernet5
+   00:0d:56:fe:b1:f5   172.16.1.32 
+fdbport=6   ifindex=6   ifname=   ifdescr=FastEthernet6
+   00:0d:56:fe:b1:fe   172.16.1.37 
+fdbport=7   ifindex=7   ifname=   ifdescr=FastEthernet7
+   00:0b:db:92:66:92   172.16.1.39 
+fdbport=8   ifindex=8   ifname=   ifdescr=FastEthernet8
+   00:0d:56:fe:8d:c3   172.16.1.40 
+fdbport=9   ifindex=9   ifname=   ifdescr=FastEthernet9
+   00:0d:56:fe:87:11   172.16.1.38 
+fdbport=10   ifindex=10   ifname=   ifdescr=FastEthernet10
+   00:c0:4f:a0:7f:ad   172.16.1.43 
+fdbport=11   ifindex=11   ifname=   ifdescr=FastEthernet11
+   00:11:43:ec:ca:1c   172.16.1.123 172.16.1.33 
+fdbport=12   ifindex=12   ifname=   ifdescr=FastEthernet12
+   00:0e:2e:00:d8:0c   172.16.1.47 
+fdbport=13   ifindex=13   ifname=   ifdescr=FastEthernet13
+   00:14:6c:0b:02:e6   172.16.1.19 
+fdbport=15   ifindex=15   ifname=   ifdescr=FastEthernet15
+   00:30:48:8e:5a:6c   172.16.1.51 
+fdbport=16   ifindex=16   ifname=   ifdescr=FastEthernet16
+   00:0b:db:92:81:98   172.16.1.100 
+fdbport=17   ifindex=17   ifname=   ifdescr=FastEthernet17
+   00:d0:b7:1e:af:50   172.16.1.42 
+fdbport=18   ifindex=18   ifname=   ifdescr=FastEthernet18
+   00:02:a5:0c:33:ad   172.16.1.44 
+fdbport=22   ifindex=22   ifname=   ifdescr=FastEthernet22
+   00:50:8b:e0:3d:ae   172.16.1.201 
+fdbport=24   ifindex=24   ifname=   ifdescr=FastEthernet24
+   00:0f:b5:f7:5a:df   172.16.1.18 
+   00:0f:b5:fe:fe:f7   172.16.1.21 
+   00:14:6c:cd:00:b0   172.16.1.20 
+fdbport=25   ifindex=25   ifname=   ifdescr=FastEthernet25
+   00:00:21:c9:0f:b6   172.16.1.206 
+   00:02:16:66:3f:e1   172.16.1.14 
+   00:13:c4:2f:63:00   
+   00:13:c4:56:a3:b8   172.16.0.1 172.16.1.1 172.16.2.1 
+   00:16:76:85:15:c0   172.16.1.48 
+   00:e0:52:0f:98:a2   172.16.1.17 
+   00:e0:52:0f:98:bb   

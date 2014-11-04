@@ -1,0 +1,30 @@
+### 172.16.4.16
+### Foundry Networks, Inc. FastIron Workgroup Switch, Iron Software Version 07.1.23T10 Compiled on Apr 18 2001 at 13:02:26 labeled as FWS07123
+
+fdbport=1   ifindex=1   ifname=   ifdescr=FastEthernet1
+   00:13:c4:2f:62:fc   
+   00:13:c4:56:a3:b8   172.16.0.1 172.16.1.1 172.16.2.1 172.16.4.1 
+fdbport=2   ifindex=2   ifname=   ifdescr=FastEthernet2
+   00:0c:29:73:4c:a3   172.16.4.242 
+   00:0c:29:e2:8b:c5   172.16.4.241 
+   00:0c:29:fe:68:83   
+   00:13:20:3d:c8:7d   172.16.4.60 
+   08:00:27:21:86:4b   
+fdbport=3   ifindex=3   ifname=   ifdescr=FastEthernet3
+   00:50:56:4e:39:24   
+fdbport=4   ifindex=4   ifname=   ifdescr=FastEthernet4
+   00:0b:db:92:52:34   172.16.4.219 
+fdbport=6   ifindex=6   ifname=   ifdescr=FastEthernet6
+   00:0b:db:92:80:d7   
+fdbport=8   ifindex=8   ifname=   ifdescr=FastEthernet8
+   00:06:5b:ec:1a:2b   
+fdbport=9   ifindex=9   ifname=   ifdescr=FastEthernet9
+   00:1d:09:c2:3d:af   
+fdbport=10   ifindex=10   ifname=   ifdescr=FastEthernet10
+   00:02:b3:19:e4:8a   172.16.4.32 
+fdbport=14   ifindex=14   ifname=   ifdescr=FastEthernet14
+   00:50:8b:d3:d6:ef   172.16.4.80 
+fdbport=20   ifindex=20   ifname=   ifdescr=FastEthernet20
+   00:0c:29:8c:98:43   172.16.4.233 
+   00:0c:29:c2:9d:5a   172.16.4.114 
+   00:50:56:4b:df:49   172.16.4.110 
